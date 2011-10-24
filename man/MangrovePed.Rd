@@ -14,9 +14,9 @@ Functions to read in and summarise MangrovePed objects
 
 readPed(prefix)
 
-summary.MangrovePed(object, ...)
-print.MangrovePed(x, ...)
-plot.MangrovePed(x, ...)
+\method{summary}{MangrovePed}(object, ...)
+\method{print}{MangrovePed}(x, ...)
+\method{plot}{MangrovePed}(x, ...)
 
 }
 \arguments{

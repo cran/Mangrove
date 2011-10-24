@@ -13,9 +13,9 @@ Functions to read in and use MangroveORs objects
 \usage{
 readORs(ORfile,header=TRUE)
 
-print.MangroveORs(x, ...)
-summary.MangroveORs(object, K = NULL, ...)
-plot.MangroveORs(x, K = NULL, ...)
+\method{print}{MangroveORs}(x, ...)
+\method{summary}{MangroveORs}(object, K = NULL, ...)
+\method{plot}{MangroveORs}(x, K = NULL, ...)
 }
 \arguments{
   \item{ORfile}{

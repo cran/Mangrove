@@ -19,9 +19,9 @@ initialiseTree()
 # tree$addPed(ped,ORs)
 # tree$getPrevs(ORs = NULL,K = NULL,overwrite=FALSE,iter=1000)
 
-print.MangroveTree(x,...)
-summary.MangroveTree(object,...)
-plot.MangroveTree(x,...)
+\method{print}{MangroveTree}(x,...)
+\method{summary}{MangroveTree}(object,...)
+\method{plot}{MangroveTree}(x,...)
 }
 \arguments{
   \item{tree}{

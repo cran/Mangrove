@@ -10,9 +10,9 @@ The MangroveSample class
 Functions for manipulating MangroveSample objects
 }
 \usage{
-print.MangroveSample(x,...)
-summary.MangroveSample(object, ...)
-plot.MangroveSample(x,...)
+\method{print}{MangroveSample}(x,...)
+\method{summary}{MangroveSample}(object, ...)
+\method{plot}{MangroveSample}(x,...)
 }
 \arguments{
   \item{x}{

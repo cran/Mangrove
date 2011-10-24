@@ -155,6 +155,45 @@ the set of controls:
 boxplot(list(ctrl=log(ccrisk[selcontrols]),cases=log(ccrisk[selcases])))
 @ 
 
+\section{Quantitative trait prediction in unrelated individuals}
+
+You can also use Mangrove to perform continuous risk prediction on unrelated individuals. For
+continuous prediction we have a beta file, which contains beta-values (the equivalent of odds ratios
+in quantitative trait prediction). These have a similar format to the odds ratio file, and are read in
+using \verb@readBetas@. All the same methods apply (plot, summary, print).
+
+We will use an example file, which actually contains beta values for 179 SNPs that predict height:
+
+<<>>=
+data(exampleBetas)
+class(exampleBetas)
+summary(exampleBetas)
+@
+
+We will also look at 1000 (simulated) female individuals genotyped at these sites:
+
+<<>>=
+data(contped)
+class(contped)
+@
+
+The mean female height is around 163cm, and the standard deviation is around 6.4cm,
+so we can perform .
+
+<<>>=
+predbetas <- calcBetas(contped,exampleBetas)
+contpreds <- applyBetas(predbetas,162,6.4)
+summary(contpreds)
+@
+
+If you are prioritising people for sequencing to find eQTLs, the best method is to sample people 
+who have significantly larger and significantly smaller values than predicted from known genetics:
+
+
+<<fig=TRUE>>=
+hist(contped[,6] - contpreds)
+@
+
 \section{Risk prediction in families}
 
 Finally, we can consider the case of risk prediction in
@@ -171,13 +210,13 @@ We can see that the family has three affected individuals, out of a
 total of 19. 9 family members have been genotyped for the same 4
 variants as above.
 
-We can use the package \verb@kinship@ to plot the pedigree, colouring
+We can use the package \verb@kinship2@ to plot the pedigree, colouring
 individuals we have genotypes for blue:
 
 <<fig=TRUE>>=
-library(kinship)
+library(kinship2)
 missing <- (apply(famped[,-c(1:6)] == 0,1,sum) == 0)
-kinped <- pedigree(famped$ID,famped$Father,famped$Mother,famped$Sex,famped$Phenotype)
+kinped <- pedigree(famped$ID,famped$Father,famped$Mother,famped$Sex,famped$Phenotype,missid=0)
 plot(kinped,col=missing*3 + 1)
 @ 
 

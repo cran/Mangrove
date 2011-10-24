@@ -264,15 +264,15 @@ function(data){
 	}
 
 .calcParams <-
-function(ORs){
+function(ORs,progress=TRUE){
 	
 	cat("Running Inside-Outside Algorithm\n")
 	cat("Calculating likelihoods.....")	
 	tree$calcLikelihoods()
 	cat("done\nCalculating inside parameters")
-	tree$calcAlpha(ORs,progress=TRUE)
+	tree$calcAlpha(ORs,progress=progress)
 	cat("done\nCalculating outside parameters")
-	tree$calcBeta(ORs,progress=TRUE)
+	tree$calcBeta(ORs,progress=progress)
 	cat("done\nCalculating posteriors.....")
 	tree$calcPost()
 	cat("done\n")
@@ -427,11 +427,14 @@ function(ID){
 .getPrevs <-
 function(ORs = NULL,K = NULL,overwrite=FALSE,iter=1000){
 	# fit models and sample variants and cases, and return samples of number of cases
+	
+	progress=TRUE
+	if (public$getNNodes() < 5) progress=FALSE
 	if (public$getNNodes() == 0) stop("Error: Cannot perform sampling on an empty tree")
 	if (!is.null(K)) private$K <<- K
 	if (overwrite | length(private$Ls) == 0 | length(private$alpha) == 0 | length(private$beta) == 0 | length(private$betap) == 0){
 		if (is.null(ORs)) stop('Error: Need to provide OR object to fit model parameters')
-		public$calcParams(ORs)
+		public$calcParams(ORs,progress)
 	}
 
 	if (overwrite | length(private$simVars) == 0){

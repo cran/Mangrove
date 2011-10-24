@@ -15,9 +15,9 @@ Methods to generate, summarise and apply MangroveRiskPreds objects
 calcORs(ped,ORs)
 applyORs(riskpred,K)
 
-print.MangroveRiskPreds(x, ...)
-summary.MangroveRiskPreds(object, ...)
-plot.MangroveRiskPreds(x, ...)
+\method{print}{MangroveRiskPreds}(x, ...)
+\method{summary}{MangroveRiskPreds}(object, ...)
+\method{plot}{MangroveRiskPreds}(x, ...)
 }
 \arguments{
   \item{ped}{
@@ -51,7 +51,7 @@ The \code{print} method writes the odds ratio for each individual to screen. The
 \code{calcORs} returns a \code{MangroveRiskPreds} object, \code{applyORs} returns a numeric vector containing posterior probabilities. The methods do not return anything.
 }
 \seealso{
-\code{\link[Mangrove]{MangroveTree}} for doing risk prediction for a whole family.
+\code{\link[Mangrove]{MangroveTree}} for doing risk prediction for a whole family. \code{\link[Mangrove]{MangroveContPreds}} for doing quantitative trait prediction.
 }
 \examples{
 data(ccped)
