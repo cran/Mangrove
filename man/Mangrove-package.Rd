@@ -14,8 +14,8 @@ individuals, or for families with missing data.
 \tabular{ll}{
 Package: \tab Mangrove\cr
 Type: \tab Package\cr
-Version: \tab 1.0\cr
-Date: \tab 2011-10-24\cr
+Version: \tab 1.21\cr
+Date: \tab 2017-02-22\cr
 License: \tab GPL (>= 2)\cr
 LazyLoad: \tab yes\cr
 }
@@ -23,7 +23,7 @@ LazyLoad: \tab yes\cr
 For a detailed example of how to use \code{Mangrove}, see \code{vignette("Mangrove")}.
 }
 \author{
-Luke Jostins <lj4@sanger.ac.uk>
+Luke Jostins <luke.jostins@kennedy.ox.ac.uk>
 }
 \keyword{ package }
 \examples{

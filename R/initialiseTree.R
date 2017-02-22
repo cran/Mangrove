@@ -10,13 +10,18 @@ function(){
 	private$os <- list() # incidies of offspring of each indivdual
 	private$data <- list() # genotype data associated with each indiviudal
 	private$Ls <- list() # likelihoods of genotype data given true genotypes
-	private$alpha <- list() # inside probabilities
-	private$beta <- list() # outside probabilities
-	private$betap <- list() # partial outside probabilies
+	private$alpha <- list() #inside probabilities
+	private$beta <- list() #outside probabilities
+	private$betap <- list() #partial outside probabilies
 	private$simVars <- NULL #sampled variants
 	private$simCases <- NULL #sampled cases
-
-        data(mendT)
+	  
+	mendT <- array(NA,c(3,3,3))
+	mendT[c(3,6,7,8,9,10,18,19,20,21,22,25)] <- 0
+	mendT[c(5,23)] <- 0.25
+	mendT[c(2,4,11,13,14,15,17,24,26)] <- 0.5
+	mendT[c(1,12,16,27)] <- 1
+	
         private$mendT <- mendT
         
 	##### the public functions ####

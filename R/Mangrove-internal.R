@@ -2,17 +2,20 @@
 function(ID,parentID,data=NULL,ccstat=NULL){
 		# add an internal node
 	
-		ind <- length(private$IDs) + 1
-		parent <- match(parentID,private$IDs)
+	    tempenv <- parent.env(environment())
+	    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
+		ind <- length(tempenv$private$IDs) + 1
+		parent <- match(parentID,tempenv$private$IDs)
 		if (is.na(parent)){
 			stop("Error: parent not found")
 			}
-		private$IDs[ind] <<- ID
-		private$ps[ind] <<- parent
-		private$os[[parent]] <<- c(private$os[[parent]],ind)
-		private$os[[ind]] <<- vector("numeric",length=0)
-		private$data[[ind]] <<- data
-		if (!is.null(ccstat)) private$Naff <<- private$Naff + ccstat
+		tempenv$private$IDs[ind] <- ID
+		tempenv$private$ps[ind] <- parent
+		tempenv$private$os[[parent]] <- c(tempenv$private$os[[parent]],ind)
+		tempenv$private$os[[ind]] <- vector("numeric",length=0)
+		tempenv$private$data[[ind]] <- data
+		if (!is.null(ccstat)) tempenv$private$Naff <- tempenv$private$Naff + ccstat
 	}
 
 .addPed <-
@@ -20,7 +23,10 @@ function(ped,ORs){
 		#read a pedigree/odds ratio file into a Mangrove tree
 		#print("start")
 
-		private$Naff <<- sum(ped[,6] == 2)
+	    tempenv <- parent.env(environment())
+	    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+
+		tempenv$private$Naff <- sum(ped[,6] == 2)
 	
 		# extract risk allele counts
 		SNPnames <- paste(rep(ORs[,1],rep(2,length(ORs[,1]))),rep(c(".1",".2"),length(ORs[,1])),sep="")
@@ -58,23 +64,23 @@ function(ped,ORs){
 		coup_parentage <- parentage[coup_nonfounders]
 		
 		# add founders to tree
-		public$addRoot(coup_ids[coup_f1 & coup_f2],RAcounts[as.character(couples[coup_f1 & coup_f2,]),])
+		tempenv$public$addRoot(coup_ids[coup_f1 & coup_f2],RAcounts[as.character(couples[coup_f1 & coup_f2,]),])
 	
 		#print("4")
 	
 		# add parent couple nodes
-		toAdd <- which(coup_parentage %in% private$IDs & !(coup_ids %in% private$IDs))
+		toAdd <- which(coup_parentage %in% tempenv$private$IDs & !(coup_ids %in% tempenv$private$IDs))
 		while (length(toAdd) > 0){
-			sapply(toAdd,function(i) public$addNode(coup_ids[i],coup_parentage[i], RAcounts[c(coup_nonfounders[i]	,coup_founders[i]),]))
-			toAdd <- which(coup_parentage %in% private$IDs & !(coup_ids %in% private$IDs))
+			sapply(toAdd,function(i) tempenv$public$addNode(coup_ids[i],coup_parentage[i], RAcounts[c(coup_nonfounders[i]	,coup_founders[i]),]))
+			toAdd <- which(coup_parentage %in% tempenv$private$IDs & !(coup_ids %in% tempenv$private$IDs))
 			}
 	
 		# add leaves
-		toAdd <- which(parentage %in% private$IDs & !(names(parentage) %in% private$IDs) & !(names(parentage) %in% c(couples[,1],couples[,2])))
+		toAdd <- which(parentage %in% tempenv$private$IDs & !(names(parentage) %in% tempenv$private$IDs) & !(names(parentage) %in% c(couples[,1],couples[,2])))
 		while (length(toAdd) > 0){
 		
-			sapply(toAdd,function(i) public$addNode(names(parentage)[i],parentage[i],RAcounts[i,]))
-			toAdd <- which(parentage %in% private$IDs & !(names(parentage) %in% private$IDs) & !(names(parentage) %in% c(couples[,1],couples[,2])))
+			sapply(toAdd,function(i) tempenv$public$addNode(names(parentage)[i],parentage[i],RAcounts[i,]))
+			toAdd <- which(parentage %in% tempenv$private$IDs & !(names(parentage) %in% tempenv$private$IDs) & !(names(parentage) %in% c(couples[,1],couples[,2])))
 		
 			}
 }
@@ -83,19 +89,26 @@ function(ped,ORs){
 function(ID,data=NULL,ccstat=NULL){
 		#add a root node
 		
-		ind <- length(private$IDs) + 1
-		private$ps[ind] <<- NA
-		private$IDs[ind] <<- ID
-		private$os[[ind]] <<-  vector("numeric",length=0)
-		private$data[[ind]] <<- data
-		if (!is.null(ccstat)) private$Naff <<- private$Naff + ccstat
+	    tempenv <- parent.env(environment())
+	    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+		
+		
+		ind <- length(tempenv$private$IDs) + 1
+		tempenv$private$ps[ind] <- NA
+		tempenv$private$IDs[ind] <- ID
+		tempenv$private$os[[ind]] <-  vector("numeric",length=0)
+		tempenv$private$data[[ind]] <- data
+		if (!is.null(ccstat)) tempenv$private$Naff <- tempenv$private$Naff + ccstat
 }
 
 .calcAlpha <-
 function(ORs,i=1,progress=FALSE){
 	# calculate inside probabilities
 	
-	if (progress & i %% floor(length(private$IDs)/5) == 0){
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
+	if (progress & i %% floor(length(tempenv$private$IDs)/5) == 0){
 		
 		cat('.')
 		
@@ -104,26 +117,26 @@ function(ORs,i=1,progress=FALSE){
 	freqs <- ORs[,5]
 
 	# if the node is a leaf, alpha = L
-	if (length(private$os[[i]]) == 0){
-		private$alpha[[i]] <<- private$Ls[[i]]
+	if (length(tempenv$private$os[[i]]) == 0){
+		tempenv$private$alpha[[i]] <- tempenv$private$Ls[[i]]
 	# if the node is not a leaf
 	} else {
-		for (j in private$os[[i]]) public$calcAlpha(ORs,j, progress=progress)
+		for (j in tempenv$private$os[[i]]) tempenv$public$calcAlpha(ORs,j, progress=progress)
 		
-		tempalpha <- private$Ls[[i]]
+		tempalpha <- tempenv$private$Ls[[i]]
 		hw_freqs <- cbind((1 - freqs)^2,2*freqs*(1 - freqs),freqs^2)
 
 		for (a in 0:2){
 			for (b in 0:2){
 				Mtrans <- sapply(0:2,function(c) .getTrans(c(a,b),c))
 
-				for (child in private$os[[i]]){
+				for (child in tempenv$private$os[[i]]){
 
-					if (length(private$os[[child]]) == 0){
-						temp <- apply(Mtrans* private$alpha[[child]],2,sum)
+					if (length(tempenv$private$os[[child]]) == 0){
+						temp <- apply(Mtrans* tempenv$private$alpha[[child]],2,sum)
 						tempalpha[a+1,b+1,] <- tempalpha[a+1,b+1,] * temp
 					} else {
-						temp <- sapply(1:length(hw_freqs[,1]),function(k) sum(Mtrans %*% t(hw_freqs[k,]) * private$alpha[[child]][,,k]))
+						temp <- sapply(1:length(hw_freqs[,1]),function(k) sum(Mtrans %*% t(hw_freqs[k,]) * tempenv$private$alpha[[child]][,,k]))
 						tempalpha[a+1,b+1,] <- tempalpha[a+1,b+1,] * temp
 					}
 			
@@ -132,7 +145,7 @@ function(ORs,i=1,progress=FALSE){
 			}
 		}
 	
-		private$alpha[[i]] <<- tempalpha
+		tempenv$private$alpha[[i]] <- tempalpha
 	}
 }
 
@@ -140,7 +153,11 @@ function(ORs,i=1,progress=FALSE){
 function(ORs,i=1,progress=FALSE){
 	#calculate inside probabilities, given frequencies in OR object
 	
-	if (progress & i %% floor(length(private$IDs)/5) == 0){
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
+	
+	if (progress & i %% floor(length(tempenv$private$IDs)/5) == 0){
 		
 		cat('.')
 		
@@ -148,10 +165,10 @@ function(ORs,i=1,progress=FALSE){
 	
 	freqs <- ORs[,5]
 	
-	tempbeta <- private$Ls[[i]]*0
+	tempbeta <- tempenv$private$Ls[[i]]*0
 	hw_freqs <- cbind((1 - freqs)^2,2*freqs*(1 - freqs),freqs^2)
 			
-	parent <- private$ps[i]
+	parent <- tempenv$private$ps[i]
 		
 	
 	# deal with the root
@@ -166,9 +183,9 @@ function(ORs,i=1,progress=FALSE){
 			}
 		
 	# then with internal nodes
-	} else if (length(private$os[[i]]) > 0){
+	} else if (length(tempenv$private$os[[i]]) > 0){
 		
-		private$betap[[i]] <<- array(dim=c(3,3,3,3,length(hw_freqs[,1])))
+		tempenv$private$betap[[i]] <- array(dim=c(3,3,3,3,length(hw_freqs[,1])))
 
 		for (a in 0:2){
 			for (b in 0:2){
@@ -178,22 +195,22 @@ function(ORs,i=1,progress=FALSE){
 				for (c in 0:2){
 					for (d in 0:2){
 						
-						tempbeta_abcd <- private$beta[[parent]][c+1,d+1,]*private$Ls[[parent]][c+1,d+1,]*.getTrans(c(c,d),a) * hw_freqs[,b+1]
+						tempbeta_abcd <- tempenv$private$beta[[parent]][c+1,d+1,]*tempenv$private$Ls[[parent]][c+1,d+1,]*.getTrans(c(c,d),a) * hw_freqs[,b+1]
 						Mtrans <- sapply(0:2,function(e) .getTrans(c(c,d),e))
 						
-						for (sib in setdiff(private$os[[parent]],i)){
+						for (sib in setdiff(tempenv$private$os[[parent]],i)){
 						
-							if (length(private$os[[sib]]) == 0){
-								temp <- apply(Mtrans*private$alpha[[sib]],2,sum)
+							if (length(tempenv$private$os[[sib]]) == 0){
+								temp <- apply(Mtrans*tempenv$private$alpha[[sib]],2,sum)
 								tempbeta_abcd <- tempbeta_abcd * temp
 							} else {
-								temp <- sapply(1:length(hw_freqs[,1]),function(k) sum(Mtrans %*% t(hw_freqs[k,]) * private$alpha[[sib]][,,k]))
+								temp <- sapply(1:length(hw_freqs[,1]),function(k) sum(Mtrans %*% t(hw_freqs[k,]) * tempenv$private$alpha[[sib]][,,k]))
 								tempbeta_abcd <- tempbeta_abcd * temp
 							}
 							
 						}
 
-						private$betap[[i]][a+1,b+1,c+1,d+1,] <<- tempbeta_abcd				
+						tempenv$private$betap[[i]][a+1,b+1,c+1,d+1,] <- tempbeta_abcd				
 						tempbeta_ab <- tempbeta_ab + tempbeta_abcd 
 						
 					}
@@ -207,7 +224,7 @@ function(ORs,i=1,progress=FALSE){
 	# then with the leaves
 	} else {
 		
-		private$betap[[i]] <<- array(dim=c(3,3,3,length(hw_freqs[,1])))
+		tempenv$private$betap[[i]] <- array(dim=c(3,3,3,length(hw_freqs[,1])))
 		
 		for (a in 0:2){
 			
@@ -216,21 +233,21 @@ function(ORs,i=1,progress=FALSE){
 			for (c in 0:2){
 				for (d in 0:2){
 					
-					tempbeta_abcd <- private$beta[[parent]][c+1,d+1,]*private$Ls[[parent]][c+1,d+1,]*.getTrans(c(c,d),a)
+					tempbeta_abcd <- tempenv$private$beta[[parent]][c+1,d+1,]*tempenv$private$Ls[[parent]][c+1,d+1,]*.getTrans(c(c,d),a)
 					Mtrans <- sapply(0:2,function(e) .getTrans(c(c,d),e))
 					
-					for (sib in setdiff(private$os[[parent]],i)){
+					for (sib in setdiff(tempenv$private$os[[parent]],i)){
 					
-						if (length(private$os[[sib]]) == 0){
-							temp <- apply(Mtrans*private$alpha[[sib]],2,sum)
+						if (length(tempenv$private$os[[sib]]) == 0){
+							temp <- apply(Mtrans*tempenv$private$alpha[[sib]],2,sum)
 							tempbeta_abcd <- tempbeta_abcd * temp
 						} else {
-							temp <- sapply(1:length(hw_freqs[,1]),function(k) sum(Mtrans %*% t(hw_freqs[k,]) * private$alpha[[sib]][,,k]))
+							temp <- sapply(1:length(hw_freqs[,1]),function(k) sum(Mtrans %*% t(hw_freqs[k,]) * tempenv$private$alpha[[sib]][,,k]))
 							tempbeta_abcd <- tempbeta_abcd * temp
 						}
 							
 					}
-					private$betap[[i]][a+1,c+1,d+1,] <<- tempbeta_abcd
+					tempenv$private$betap[[i]][a+1,c+1,d+1,] <- tempbeta_abcd
 					tempbeta_ab <- tempbeta_ab + tempbeta_abcd 
 						
 				}
@@ -244,12 +261,12 @@ function(ORs,i=1,progress=FALSE){
 		
 	}
 	
-	private$beta[[i]] <<- tempbeta
+	tempenv$private$beta[[i]] <- tempbeta
 	
-	if (length(private$os[[i]]) > 0){
+	if (length(tempenv$private$os[[i]]) > 0){
 		
-		for (i in private$os[[i]]){
-			public$calcBeta(ORs,i,progress)
+		for (i in tempenv$private$os[[i]]){
+			tempenv$public$calcBeta(ORs,i,progress)
 		}
 		
 	}
@@ -258,63 +275,74 @@ function(ORs,i=1,progress=FALSE){
 
 .calcLikelihoods <-
 function(data){
+	
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
 	# calculates the likelihoods given genotype data private$data
-	private$Ls <<- lapply(private$data,.getLikelihood)
+	tempenv$private$Ls <- lapply(tempenv$private$data,.getLikelihood)
 		
 	}
 
 .calcParams <-
 function(ORs,progress=TRUE){
 	
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
 	cat("Running Inside-Outside Algorithm\n")
 	cat("Calculating likelihoods.....")	
-	tree$calcLikelihoods()
+	tempenv$public$calcLikelihoods()
 	cat("done\nCalculating inside parameters")
-	tree$calcAlpha(ORs,progress=progress)
+	tempenv$public$calcAlpha(ORs,progress=progress)
 	cat("done\nCalculating outside parameters")
-	tree$calcBeta(ORs,progress=progress)
+	tempenv$public$calcBeta(ORs,progress=progress)
 	cat("done\nCalculating posteriors.....")
-	tree$calcPost()
+	tempenv$public$calcPost()
 	cat("done\n")
 	}
 
 .calcPost <-
 function(i=1){
 
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
+
 	if (i == 1){
 
-		unnorm <- private$beta[[i]]*private$alpha[[i]]
+		unnorm <- tempenv$private$beta[[i]]*tempenv$private$alpha[[i]]
 		Pds <- apply(unnorm,3,sum)
-		private$post[[i]] <<- unnorm/rep(Pds,rep(9,length(Pds)))
+		tempenv$private$post[[i]] <- unnorm/rep(Pds,rep(9,length(Pds)))
 	
 	} else {
 		# calculate and normalize conditional posteriors
-		private$condpost[[i]] <<- private$betap[[i]]*0
+		tempenv$private$condpost[[i]] <- tempenv$private$betap[[i]]*0
 		
-		if (length(private$os[[i]]) == 0){
+		if (length(tempenv$private$os[[i]]) == 0){
 			
-			unnorm <- private$beta[[i]]*private$alpha[[i]]
+			unnorm <- tempenv$private$beta[[i]]*tempenv$private$alpha[[i]]
 			Pds <- apply(unnorm,2,sum)
-			private$post[[i]] <<- unnorm/rep(Pds,rep(3,length(Pds)))
+			tempenv$private$post[[i]] <- unnorm/rep(Pds,rep(3,length(Pds)))
 			
 			for (c in 0:2){	
 				for (d in 0:2){				
-					unnorm <- private$betap[[i]][,c+1,d+1,]*private$alpha[[i]]
+					unnorm <- tempenv$private$betap[[i]][,c+1,d+1,]*tempenv$private$alpha[[i]]
 					Pds <- apply(unnorm,2,sum)
-					private$condpost[[i]][,c+1,d+1,] <<- unnorm/rep(Pds,rep(3,length(Pds)))
+					tempenv$private$condpost[[i]][,c+1,d+1,] <- unnorm/rep(Pds,rep(3,length(Pds)))
 				}
 			}
 		} else {
 			
-			unnorm <- private$beta[[i]]*private$alpha[[i]]
+			unnorm <- tempenv$private$beta[[i]]*tempenv$private$alpha[[i]]
 			Pds <- apply(unnorm,3,sum)
-			private$post[[i]] <<- unnorm/rep(Pds,rep(9,length(Pds)))
+			tempenv$private$post[[i]] <- unnorm/rep(Pds,rep(9,length(Pds)))
 			
 			for (c in 0:2){
 				for (d in 0:2){
-					unnorm <- private$betap[[i]][,,c+1,d+1,]* private$alpha[[i]]
+					unnorm <- tempenv$private$betap[[i]][,,c+1,d+1,]* tempenv$private$alpha[[i]]
 					Pds <- apply(unnorm,3,sum)
-					private$condpost[[i]][,,c+1,d+1,] <<- unnorm/rep(Pds,rep(9,length(Pds)))
+					tempenv$private$condpost[[i]][,,c+1,d+1,] <- unnorm/rep(Pds,rep(9,length(Pds)))
 				}
 			
 			
@@ -323,7 +351,7 @@ function(i=1){
 		}
 	}
 	
-	for (child in private$os[[i]])	public$calcPost(child)
+	for (child in tempenv$private$os[[i]])	tempenv$public$calcPost(child)
 
 }
 
@@ -371,8 +399,11 @@ function(a){
 
 .getData <-
 function(){
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
 		# returns the private data
-		return(private)
+		return(tempenv$private)
 	}
 
 .getLikelihood <-
@@ -387,20 +418,24 @@ function(a){
 
 .getMaxDepth <-
 function(ID=NULL,depth=0){
+	
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
 		#returns the maximum depth of the tree
 		temp <- depth
-		if (public$getNNodes() == 0) return(0)		
+		if (tempenv$public$getNNodes() == 0) return(0)		
 		if (is.null(ID)){
 			
-			for (x in public$getRoot()){
-				temp <- c(temp,public$getMaxDepth(x,depth=depth+1))
+			for (x in tempenv$public$getRoot()){
+				temp <- c(temp,tempenv$public$getMaxDepth(x,depth=depth+1))
 			}
 			
 		} else {
 			#print(c(ID,depth))
 
-			for (x in public$getOffspring(ID)){
-				temp <- c(temp,public$getMaxDepth(x,depth=depth+1))
+			for (x in tempenv$public$getOffspring(ID)){
+				temp <- c(temp,tempenv$public$getMaxDepth(x,depth=depth+1))
 			}
 			
 		}
@@ -410,60 +445,76 @@ function(ID=NULL,depth=0){
 
 .getNinds <-
 function(){
-	return(sum(sapply(private$os,length) != 0)*2 + sum(sapply(private$os,length) == 0))
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
+	return(sum(sapply(tempenv$private$os,length) != 0)*2 + sum(sapply(tempenv$private$os,length) == 0))
 	}
 
 .getNNodes <-
 function(){
-	return(length(private$IDs))
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
+	return(length(tempenv$private$IDs))
 	}
 
 .getOffspring <-
 function(ID){
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
 		# returns offspring of a node
-		private$IDs[private$os[[which(private$IDs == ID)]]]
+		tempenv$private$IDs[tempenv$private$os[[which(tempenv$private$IDs == ID)]]]
 	}
 
 .getPrevs <-
 function(ORs = NULL,K = NULL,overwrite=FALSE,iter=1000){
 	# fit models and sample variants and cases, and return samples of number of cases
 	
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
+	
 	progress=TRUE
-	if (public$getNNodes() < 5) progress=FALSE
-	if (public$getNNodes() == 0) stop("Error: Cannot perform sampling on an empty tree")
-	if (!is.null(K)) private$K <<- K
-	if (overwrite | length(private$Ls) == 0 | length(private$alpha) == 0 | length(private$beta) == 0 | length(private$betap) == 0){
+	if (tempenv$public$getNNodes() < 5) progress=FALSE
+	if (tempenv$public$getNNodes() == 0) stop("Error: Cannot perform sampling on an empty tree")
+	if (!is.null(K)) tempenv$private$K <- K
+	if (overwrite | length(tempenv$private$Ls) == 0 | length(tempenv$private$alpha) == 0 | length(tempenv$private$beta) == 0 | length(tempenv$private$betap) == 0){
 		if (is.null(ORs)) stop('Error: Need to provide OR object to fit model parameters')
-		public$calcParams(ORs,progress)
+		tempenv$public$calcParams(ORs,progress)
 	}
 
-	if (overwrite | length(private$simVars) == 0){
+	if (overwrite | length(tempenv$private$simVars) == 0){
 		cat("Sampling variants from posterior")
-		public$sampleVariants(iter= iter,report=T)	
+		tempenv$public$sampleVariants(iter= iter,report=T)	
 		cat('done\n')
 	}
 	
-	if (overwrite | length(private$simCases) == 0){
+	if (overwrite | length(tempenv$private$simCases) == 0){
 		if (is.null(ORs)) stop('Error: Need to provide odds ratio object ORs to sample cases')
 		if (is.null(K)) stop('Error: Need to provide prevalence value K to sample cases')
 		cat('Sampling cases given sampled variants')
-		public$sampleCases(ORs,K,report=T,iter=iter)
+		tempenv$public$sampleCases(ORs,K,report=T,iter=iter)
 		cat('done\n')
 	}	
 	
 	output <- list()
-	output$samples <- private$simCases
-	output$K <- private$K
-	output$Ncases <- private$Naff
-	output$N <- public$getNinds()
+	output$samples <- tempenv$private$simCases
+	output$K <- tempenv$private$K
+	output$Ncases <- tempenv$private$Naff
+	output$N <- tempenv$public$getNinds()
 	class(output) <- "MangroveSample"
 	return(output)
 }
 
 .getRoot <-
 function(){
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
 		# returns IDs of founders
-		private$IDs[which(is.na(private$ps))]
+		tempenv$private$IDs[which(is.na(tempenv$private$ps))]
 	}
 
 .getSingleLikelihood <-
@@ -481,6 +532,12 @@ function(a){
 
 .getTrans <-
 function(a,b,f=NULL){
+	mendT <- array(NA,c(3,3,3))
+	mendT[c(3,6,7,8,9,10,18,19,20,21,22,25)] <- 0
+	mendT[c(5,23)] <- 0.25
+	mendT[c(2,4,11,13,14,15,17,24,26)] <- 0.5
+	mendT[c(1,12,16,27)] <- 1
+	
 	# calculate transmission probabilities between two nodes	
 	if (length(b) > 1 & is.null(f))	stop("Error: Need to supply f for couple->couple trans")
 	if (length(b) == 1 & !is.null(f)) stop("Error: f supplied but only one b state given")
@@ -531,29 +588,33 @@ function (libname, pkgname)
 }
 .printSummary <-
 function(){
+	
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
 	#prints some data about the tree
 	 
 	cat("A mangrove tree\n")
 	cat("Number of nodes: ")
-	cat(public$getNNodes())
+	cat(tempenv$public$getNNodes())
 	cat("\n")
 	cat("Max depth: ")
-	cat(public$getMaxDepth())
+	cat(tempenv$public$getMaxDepth())
 	cat("\n")
 
-	if (length(private$data) > 0){
+	if (length(tempenv$private$data) > 0){
 		cat("Genotype data: loaded\n")
 	} else {
 		cat("Genotype data: Not loaded\n")
 	}
 	
-	if (length(private$Ls) > 0 & length(private$alpha) > 0 & length(private$beta) > 0 & length(private$betap)){
+	if (length(tempenv$private$Ls) > 0 & length(tempenv$private$alpha) > 0 & length(tempenv$private$beta) > 0 & length(tempenv$private$betap)){
 		cat("Model parameters: calculated\n")
 	} else {
 		cat("Model parameters: not calculated\n")
 	}
 	
-	if (length(private$simVars) > 0 | length(private$simCases)){
+	if (length(tempenv$private$simVars) > 0 | length(tempenv$private$simCases)){
 		cat("Sampling: performed\n")
 	} else {
 		cat("Sampling: not performed\n")
@@ -562,20 +623,25 @@ function(){
 
 .printTree <-
 function(ID=NULL,depth=0){
+	
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
+	
 		#prints the tree structure
-		if (public$getNNodes() == 0){
+		if (tempenv$public$getNNodes() == 0){
 			 cat("The tree is empty\n")		
 			return(0)
 		}
 		if (is.null(ID)){	
-			public$printTree(public$getRoot(),depth=depth+1)
+			tempenv$public$printTree(tempenv$public$getRoot(),depth=depth+1)
 		
 		} else {
 			#print(c(ID,depth))
 			cat(paste(rep("-",depth),collapse=""))
 			cat(paste(ID,"\n",sep=""))
-			for (x in public$getOffspring(ID)){
-				public$printTree(x,depth=depth+1)
+			for (x in tempenv$public$getOffspring(ID)){
+				tempenv$public$printTree(x,depth=depth+1)
 			}
 			
 		}
@@ -586,10 +652,14 @@ function(ID=NULL,depth=0){
 function(ORs,K,report=FALSE,iter=1000){
 	# samples cases given sampled variants
 	
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
+	
 	mix2founder <- c(1,2,3,1,2,3,1,2,3)
 	mix2nfounder <- c(1,1,1,2,2,2,3,3,3)
 
-	N <- sum(sapply(private$Ls,function(x) length(dim(x))-1))
+	N <- sum(sapply(tempenv$private$Ls,function(x) length(dim(x))-1))
 	iters <- iter
 	out <- matrix(NA,ncol=N,nrow=iters)
 
@@ -597,20 +667,20 @@ function(ORs,K,report=FALSE,iter=1000){
 
 	meanOR <- prod(ORs[,6])
 
-	for (node in 1:length(private$IDs)){
+	for (node in 1:length(tempenv$private$IDs)){
 	
 		if (report & (node %% floor(N/5)) == 0) cat(".")
 	
-		if (length(dim(private$Ls[[node]])) == 3){
-			k1 <- apply(private$simVars[,node,],1,function(i) prod((mix2founder[i] == 1) + (mix2founder[i] == 2)*ORs[,3] + (mix2founder[i] == 3)*ORs[,4]))
-			k2 <- apply(private$simVars[,node,],1,function(i) prod((mix2nfounder[i] == 1) + (mix2nfounder[i] == 2)*ORs[,3] + (mix2nfounder[i] == 3)*ORs[,4]))
+		if (length(dim(tempenv$private$Ls[[node]])) == 3){
+			k1 <- apply(tempenv$private$simVars[,node,],1,function(i) prod((mix2founder[i] == 1) + (mix2founder[i] == 2)*ORs[,3] + (mix2founder[i] == 3)*ORs[,4]))
+			k2 <- apply(tempenv$private$simVars[,node,],1,function(i) prod((mix2nfounder[i] == 1) + (mix2nfounder[i] == 2)*ORs[,3] + (mix2nfounder[i] == 3)*ORs[,4]))
 	
 			out[,pos] <- k1
 			out[,pos + 1] <- k2
 			pos <- pos + 2
 		} else {
 	
-			k <- apply(private$simVars[,node,],1,function(i) prod((i == 1) + (i == 2)*ORs[,3] + (i == 3)*ORs[,4]))
+			k <- apply(tempenv$private$simVars[,node,],1,function(i) prod((i == 1) + (i == 2)*ORs[,3] + (i == 3)*ORs[,4]))
 			out[,pos] <- k
 			pos <- pos + 1
 		}
@@ -620,34 +690,38 @@ function(ORs,K,report=FALSE,iter=1000){
 	preodds <- K/(1 - K)
 	postodds <- preodds*out/meanOR
 	post <- postodds/(1 + postodds)
-	private$simCases <<- apply(post > runif(post),1,sum)
+	tempenv$private$simCases <- apply(post > runif(post),1,sum)
 	
 }
 
 .sampleVariant <-
 function(variant,i=1,p=NULL,parentsamples=NULL,iter=1000){
+	
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
 	transM <- cbind(rep(0:2,3),rep(0:2,c(3,3,3)))
 
 	parents_nz <- (1:9)[parentsamples != 0]
 	parent_counts <- parentsamples[parentsamples != 0]
 	
 	if (i == 1) {
-		if (all(is.na(as.vector(private$post[[1]][,,variant])))){
+		if (all(is.na(as.vector(tempenv$private$post[[1]][,,variant])))){
 			stop(paste("Impossible genetic structure for variant number ",variant,". Likely a Mendelian error.",sep=""))
 		}
-		outtemp <- rmultinom(1,iter,as.vector(private$post[[1]][,,variant]))
-		private$simVars[,1,variant] <<- rep(1:9, outtemp)
+		outtemp <- rmultinom(1,iter,as.vector(tempenv$private$post[[1]][,,variant]))
+		tempenv$private$simVars[,1,variant] <- rep(1:9, outtemp)
 		
-	} else if (length(private$os[[i]]) == 0){
+	} else if (length(tempenv$private$os[[i]]) == 0){
 
 		for (x in 1:length(parents_nz)){
-		if (all(is.na(as.vector(private$post[[1]][,,variant])))){
+		if (all(is.na(as.vector(tempenv$private$post[[1]][,,variant])))){
 			stop(paste("Impossible genetic structure for variant number ",variant," . Likely a Mendelian error.",sep=""))
 		}
-			temp_sample <- rmultinom(1,parent_counts[x], private$condpost[[i]][,transM[parents_nz[x],1]+1,transM[parents_nz[x],2]+1,variant])
+			temp_sample <- rmultinom(1,parent_counts[x], tempenv$private$condpost[[i]][,transM[parents_nz[x],1]+1,transM[parents_nz[x],2]+1,variant])
 			temp_sample_data <- rep(1:3,temp_sample)
-			if (length(temp_sample_data) > 1) private$simVars[private$simVars[,p,variant] == parents_nz[x],i,variant] <<- sample(temp_sample_data)
-			else private$simVars[private$simVars[,p,variant] == parents_nz[x],i,variant] <<- temp_sample_data
+			if (length(temp_sample_data) > 1) tempenv$private$simVars[tempenv$private$simVars[,p,variant] == parents_nz[x],i,variant] <- sample(temp_sample_data)
+			else tempenv$private$simVars[tempenv$private$simVars[,p,variant] == parents_nz[x],i,variant] <- temp_sample_data
 		}
 	
 	} else {
@@ -655,25 +729,29 @@ function(variant,i=1,p=NULL,parentsamples=NULL,iter=1000){
 		outtemp <- parentsamples*0
 	
 		for (x in 1:length(parents_nz)){
-			temp_sample <- rmultinom(1:9,parent_counts[x],private$condpost[[i]][,,transM[parents_nz[x],1]+1,transM[parents_nz[x],2]+1,variant])
+			temp_sample <- rmultinom(1:9,parent_counts[x],tempenv$private$condpost[[i]][,,transM[parents_nz[x],1]+1,transM[parents_nz[x],2]+1,variant])
 			temp_sample_data <- rep(1:9,temp_sample)
-			if (length(temp_sample_data) > 1) private$simVars[private$simVars[,p,variant] == parents_nz[x],i,variant] <<- sample(temp_sample_data)
-			else private$simVars[private$simVars[,p,variant] == parents_nz[x],i,variant] <<- temp_sample_data
+			if (length(temp_sample_data) > 1) tempenv$private$simVars[tempenv$private$simVars[,p,variant] == parents_nz[x],i,variant] <- sample(temp_sample_data)
+			else tempenv$private$simVars[tempenv$private$simVars[,p,variant] == parents_nz[x],i,variant] <- temp_sample_data
 			outtemp <- outtemp + temp_sample
 		}
 	} 
 	
-	for (child in private$os[[i]]) public$sampleVariant(variant,child,i,outtemp,iter)
+	for (child in tempenv$private$os[[i]]) tempenv$public$sampleVariant(variant,child,i,outtemp,iter)
 	
 }
 
 .sampleVariants <-
 function(iter=1000,report=FALSE){
-	private$simVars <<- array(dim=c(iter,length(private$IDs),length(private$Ls[[1]][1,1,])))
+	
+    tempenv <- parent.env(environment())
+    if (identical(globalenv(), tempenv)) stop("Error: Attempted to write to global environment")
+	
+	tempenv$private$simVars <- array(dim=c(iter,length(tempenv$private$IDs),length(tempenv$private$Ls[[1]][1,1,])))
 
-	for (i in 1:length(private$Ls[[1]][1,1,])){
-		if (report & i %% (max(floor(length(private$Ls[[1]][1,1,])/5),1)) == 0) cat('.')
-		public$sampleVariant(i,iter=iter)	
+	for (i in 1:length(tempenv$private$Ls[[1]][1,1,])){
+		if (report & i %% (max(floor(length(tempenv$private$Ls[[1]][1,1,])/5),1)) == 0) cat('.')
+		tempenv$public$sampleVariant(i,iter=iter)	
 		}
 	}
 
